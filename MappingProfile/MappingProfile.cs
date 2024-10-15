@@ -8,9 +8,7 @@ namespace Bike_Store_App_WebApi.MappingProfile
     {
         public MappingProfile()
         {
-            CreateMap<Product, ProductDTO>()
-    .ForMember(dest => dest.BrandName, opt => opt.MapFrom(src => src.Brand != null ? src.Brand.BrandName : null)) // Adjust as per your Brand class
-    .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : null)); // Adjust as per your Category class
+            CreateMap<Product, ProductDTO>();
 
 
             CreateMap<ProductDTO, Product>();
@@ -18,6 +16,9 @@ namespace Bike_Store_App_WebApi.MappingProfile
             CreateMap<Category, CategoryDTO>() ;
 
             CreateMap<CategoryDTO, Category>();
+
+            CreateMap<Inventory, InventoryDTO>();
+            CreateMap<InventoryDTO, Inventory>();
         }
     }
 }

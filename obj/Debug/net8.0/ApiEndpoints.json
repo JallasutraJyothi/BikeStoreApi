@@ -199,7 +199,7 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[Bike_Store_App_WebApi.Models.Inventory, Bike_Store_App_WebApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Bike_Store_App_WebApi.DTO.InventoryDTO, Bike_Store_App_WebApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -218,8 +218,8 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "inventory",
-        "Type": "Bike_Store_App_WebApi.Models.Inventory",
+        "Name": "inventoryDTO",
+        "Type": "Bike_Store_App_WebApi.DTO.InventoryDTO",
         "IsRequired": true
       }
     ],
@@ -239,8 +239,8 @@
         "IsRequired": true
       },
       {
-        "Name": "inventory",
-        "Type": "Bike_Store_App_WebApi.Models.Inventory",
+        "Name": "inventoryDTO",
+        "Type": "Bike_Store_App_WebApi.DTO.InventoryDTO",
         "IsRequired": true
       }
     ],

@@ -1,4 +1,6 @@
-﻿using Bike_Store_App_WebApi.Data;
+﻿using AutoMapper;
+using Bike_Store_App_WebApi.Data;
+using Bike_Store_App_WebApi.DTO;
 using Bike_Store_App_WebApi.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,64 +8,97 @@ namespace Bike_Store_App_WebApi.Services
 {
     public class InventoryService : IInventoryService
     {
-        public readonly BikeStoreContext _context;
-        public InventoryService(BikeStoreContext context)
+        private readonly BikeStoreContext _context;
+        private readonly IMapper _mapper;
+
+        public InventoryService(BikeStoreContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
-        public async Task AddInventoryDetails(Inventory inventory)
+        public async Task AddInventoryDetails(InventoryDTO inventoryDTO)
         {
+            // Map DTO to Inventory model
+            var inventory = new Inventory
+            {
+                ProductId = inventoryDTO.ProductId,
+                Quantity = inventoryDTO.Quantity,
+                RestockDate = inventoryDTO.RestockDate
+                // Note: You may want to add validation or additional mapping for other properties
+            };
+
             _context.Inventories.Add(inventory);
             await _context.SaveChangesAsync();
         }
 
+
         public async Task DeleteInventoryDeatils(int id)
         {
-            var inventory = await _context.Inventories.FindAsync();
+            var inventory = await _context.Inventories.FindAsync(id);
             if (inventory != null)
             {
                 _context.Inventories.Remove(inventory);
                 await _context.SaveChangesAsync();
             }
+            else
+            {
+                throw new KeyNotFoundException($"Inventory with ID {id} not found.");
+            }
         }
 
-        public async Task UpdateInventoryDetails(Inventory inventory)
+        public async Task UpdateInventoryDetails(InventoryDTO inventoryDTO)
         {
-            if (inventory == null)
+            if (inventoryDTO == null)
             {
-                throw new ArgumentNullException(nameof(inventory));
+                throw new ArgumentNullException(nameof(inventoryDTO));
             }
 
-            var existingInventory = await _context.Inventories.FindAsync(inventory);
+            var existingInventory = await _context.Inventories.FindAsync(inventoryDTO.InventoryId);
             if (existingInventory != null)
             {
-                existingInventory.ProductId = inventory.ProductId;
-                existingInventory.Quantity = inventory.Quantity;
-                existingInventory.RestockDate = inventory.RestockDate;
+                existingInventory.ProductId = inventoryDTO.ProductId;
+                existingInventory.Quantity = inventoryDTO.Quantity;
+                existingInventory.RestockDate = inventoryDTO.RestockDate;
 
                 _context.Inventories.Update(existingInventory);
                 await _context.SaveChangesAsync();
             }
             else
             {
-                throw new KeyNotFoundException($"Inventory with ID {inventory.InventoryId} not found.");
+                throw new KeyNotFoundException($"Inventory with ID {inventoryDTO.InventoryId} not found.");
             }
         }
 
-        public async Task<IEnumerable<Inventory>> ViewAllInventoryDetails()
+        public async Task<IEnumerable<InventoryDTO>> ViewAllInventoryDetails()
         {
-            return await _context.Inventories
-        .Include(i => i.Product) // Include the related Product
-        .ToListAsync();
+            var inventories = await _context.Inventories
+                .Include(i => i.Product)
+                    .ThenInclude(p => p.Brand)
+                .Include(i => i.Product)
+                    .ThenInclude(p => p.Category)
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<InventoryDTO>>(inventories);
         }
 
-        public async Task<Inventory> ViewInventoryDetailsForASpecificProduct(int productId)
+        public async Task<InventoryDTO> ViewInventoryDetailsForASpecificProduct(int productId)
         {
             var inventoryItem = await _context.Inventories
-        .Include(i => i.Product) // Include the Product details
-        .FirstOrDefaultAsync(i => i.ProductId == productId);
+                .Include(i => i.Product) // Include the Product details
+                    .ThenInclude(p => p.Brand) // Include Brand through Product
+                .Include(i => i.Product)
+                    .ThenInclude(p => p.Category) // Include Category through Product
+                .FirstOrDefaultAsync(i => i.ProductId == productId);
 
-            return inventoryItem;
+            // If inventoryItem is null, return null or handle it as needed
+            if (inventoryItem == null)
+            {
+                return null; // or throw an exception if you prefer
+            }
+
+            // Map to DTO
+            return _mapper.Map<InventoryDTO>(inventoryItem);
         }
+
     }
 }

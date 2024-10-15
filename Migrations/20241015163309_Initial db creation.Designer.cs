@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bike_Store_App_WebApi.Migrations
 {
     [DbContext(typeof(BikeStoreContext))]
-    [Migration("20241015065128_initial db creation")]
-    partial class initialdbcreation
+    [Migration("20241015163309_Initial db creation")]
+    partial class Initialdbcreation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,6 +63,30 @@ namespace Bike_Store_App_WebApi.Migrations
                     b.HasKey("CategoryId");
 
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Bike_Store_App_WebApi.Models.Inventory", b =>
+                {
+                    b.Property<int>("InventoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InventoryId"));
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RestockDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("InventoryId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Inventories");
                 });
 
             modelBuilder.Entity("Bike_Store_App_WebApi.Models.Order", b =>
@@ -165,6 +189,42 @@ namespace Bike_Store_App_WebApi.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("Bike_Store_App_WebApi.Models.Review", b =>
+                {
+                    b.Property<int>("ReviewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewId"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReviewId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("Bike_Store_App_WebApi.Models.ShoppingCart", b =>
                 {
                     b.Property<int>("CartId")
@@ -229,6 +289,17 @@ namespace Bike_Store_App_WebApi.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("Bike_Store_App_WebApi.Models.Inventory", b =>
+                {
+                    b.HasOne("Bike_Store_App_WebApi.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Bike_Store_App_WebApi.Models.Order", b =>
                 {
                     b.HasOne("Bike_Store_App_WebApi.Models.User", "User")
@@ -276,6 +347,25 @@ namespace Bike_Store_App_WebApi.Migrations
                     b.Navigation("Brand");
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Bike_Store_App_WebApi.Models.Review", b =>
+                {
+                    b.HasOne("Bike_Store_App_WebApi.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Bike_Store_App_WebApi.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Bike_Store_App_WebApi.Models.ShoppingCart", b =>
