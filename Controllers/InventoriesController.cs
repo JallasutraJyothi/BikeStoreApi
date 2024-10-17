@@ -1,4 +1,5 @@
-﻿using Bike_Store_App_WebApi.Models;
+﻿using Bike_Store_App_WebApi.DTO;
+using Bike_Store_App_WebApi.Models;
 using Bike_Store_App_WebApi.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,25 +30,24 @@ namespace Bike_Store_App_WebApi.Controllers
 
         // GET: api/Inventory
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Inventory>>> ViewAllInventoryDetails()
+        public async Task<ActionResult<IEnumerable<InventoryDTO>>> ViewAllInventoryDetails()
         {
             var inventoryList = await _inventoryService.ViewAllInventoryDetails();
-
             return Ok(inventoryList);
         }
 
         // PUT: api/Inventory/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateInventoryDetails(int id, [FromBody] Inventory inventory)
+        public async Task<IActionResult> UpdateInventoryDetails(int id, [FromBody] InventoryDTO inventoryDTO)
         {
-            if (id != inventory.InventoryId)
+            if (id != inventoryDTO.InventoryId)
             {
                 return BadRequest("Inventory ID mismatch.");
             }
 
             try
             {
-                await _inventoryService.UpdateInventoryDetails(inventory);
+                await _inventoryService.UpdateInventoryDetails(inventoryDTO);
             }
             catch (KeyNotFoundException)
             {
@@ -61,27 +61,37 @@ namespace Bike_Store_App_WebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteInventoryDeatils(int id)
         {
-            var inventoryDetails = await _inventoryService.ViewInventoryDetailsForASpecificProduct(id);
-
-            if (inventoryDetails == null)
+            try
             {
-                return NotFound();
+                await _inventoryService.DeleteInventoryDeatils(id);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound($"Inventory with ID {id} not found.");
             }
 
-            return Ok(inventoryDetails);
+            return NoContent();
         }
 
         // POST: api/Inventory
         [HttpPost]
-        public async Task<IActionResult> AddInventoryDetails([FromBody] Inventory inventory)
+        public async Task<IActionResult> AddInventoryDetails([FromBody] InventoryDTO inventoryDTO)
         {
-            if (inventory == null)
+            try
             {
-                return BadRequest("Invalid inventory details.");
+                await _inventoryService.AddInventoryDetails(inventoryDTO);
+                return StatusCode(201); // HTTP 201 Created
             }
-
-            await _inventoryService.AddInventoryDetails(inventory);
-            return CreatedAtAction(nameof(ViewInventoryDetailsForASpecificProduct), new { carId = inventory.ProductId }, inventory);
+            catch (InvalidOperationException ex)
+            {
+                // Return a Conflict response if the inventory entry already exists
+                return Conflict(ex.Message); // HTTP 409 Conflict
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions as needed
+                return StatusCode(500, "Internal server error: " + ex.Message); // HTTP 500 Internal Server Error
+            }
         }
     }
 }

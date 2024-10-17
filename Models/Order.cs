@@ -18,7 +18,7 @@ namespace Bike_Store_App_WebApi.Models
         public string OrderStatus { get; set; }
 
 
-        public User User { get; set; }
-        public ICollection<OrderItem> OrderItems { get; set; }
+        public virtual User User { get; set; } 
+        public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>(); 
     }
 }

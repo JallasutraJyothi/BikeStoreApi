@@ -19,9 +19,21 @@ namespace Bike_Store_App_WebApi.Services
 
         public async Task<CategoryDTO> AddCategory(CategoryDTO categoryDTO)
         {
+            var existingCategory = await _context.Categories
+        .FirstOrDefaultAsync(c => c.CategoryName == categoryDTO.CategoryName); // Replace with the appropriate unique property
+
+            if (existingCategory != null)
+            {
+                // Throw an exception with a message indicating the category already exists
+                throw new System.InvalidOperationException("Category already exists."); // You can customize this message as needed
+            }
+
+            // Map DTO to Category entity and add it to the context
             var category = _mapper.Map<Category>(categoryDTO);
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
+
+            // Fetch the saved category to return with its related entities if needed
             return _mapper.Map<CategoryDTO>(category);
         }
         public async Task DeleteCategory(int categoryId)

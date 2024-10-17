@@ -10,7 +10,7 @@ namespace Bike_Store_App_WebApi.Models
         public int ProductId {  get; set; }
 
         [Required]
-        [StringLength(100,ErrorMessage ="product Name cannot exceed 100 characters")]
+        [StringLength(100,ErrorMessage ="Product name cannot exceed 100 characters")]
         public string ProductName { get; set; }
 
         [StringLength(500,ErrorMessage ="Description cannot exced 500 characters")]
@@ -26,14 +26,17 @@ namespace Bike_Store_App_WebApi.Models
         [Required]
         [Range(0,int.MaxValue,ErrorMessage ="Stock Quantity must be non-negative")]
         public int StockQuantity {  get; set; }
-        //[JsonIgnore]
 
         public string Image {  get; set; }
 
         [ForeignKey("Brand")]
         public int BrandId {  get; set; }
 
-        public Category? Category { get; set; }
-        public Brand Brand { get; set; }
+        public virtual Category? Category { get; set; }
+        public virtual Brand Brand { get; set; }
+
+        public virtual ICollection<OrderItem> OrderItems { get; set; }=new List<OrderItem>();
+        public virtual ICollection<ShoppingCart> ShoppingCarts { get; set; } = new List<ShoppingCart>();
+
     }
 }

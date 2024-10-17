@@ -29,8 +29,21 @@ namespace Bike_Store_App_WebApi.Controllers
         [HttpPost("categories")]
         public async Task<IActionResult> AddCategory([FromBody] CategoryDTO categoryDTO)
         {
-            var createdCategory = await _categoryService.AddCategory(categoryDTO);
-            return CreatedAtAction(nameof(GetCategoryById), new { id = createdCategory.CategoryId }, createdCategory);
+            try
+            {
+                var createdCategory = await _categoryService.AddCategory(categoryDTO);
+                return CreatedAtAction(nameof(GetCategoryById), new { id = createdCategory.CategoryId }, createdCategory);
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                // Return a Conflict response if the category already exists
+                return Conflict(ex.Message); // HTTP 409 Conflict
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions as needed
+                return StatusCode(500, "Internal server error: " + ex.Message); // HTTP 500 Internal Server Error
+            }
         }
 
         [HttpDelete("categories/{categoryId}")]

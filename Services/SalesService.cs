@@ -15,40 +15,74 @@ namespace Bike_Store_App_WebApi.Services
 
         public async Task<IEnumerable<SalesReport>> GetSalesReports(string frequency)
         {
-            // Here, we assume you have an `Order` table in your database to aggregate sales data
-            var salesData = await _context.Orders
-                .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new SalesReport
-                {
-                    Date = g.Key,
-                    TotalSales = g.Sum(o => o.TotalPrice),
-                    TotalOrders = g.Count()
-                })
-                .ToListAsync();
-
-            return frequency switch
+            // Ensure we are only processing daily data for storage
+            if (frequency.ToLower() == "daily")
             {
-                "daily" => salesData,
-                "weekly" => salesData
-                    .GroupBy(x => x.Date.AddDays(-(int)x.Date.DayOfWeek))
+                // Fetch daily sales data grouped by order date
+                var salesData = await _context.Orders
+                    .GroupBy(o => o.OrderDate.Date)
                     .Select(g => new SalesReport
                     {
                         Date = g.Key,
-                        TotalSales = g.Sum(x => x.TotalSales),
-                        TotalOrders = g.Sum(x => x.TotalOrders)
+                        TotalSales = g.Sum(o => o.TotalPrice),
+                        TotalOrders = g.Count()
                     })
-                    .ToList(),
-                "monthly" => salesData
-                    .GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1))
-                    .Select(g => new SalesReport
+                    .ToListAsync();
+
+                // List to store daily reports
+                foreach (var report in salesData)
+                {
+                    // Check if a report for the date already exists
+                    var existingReport = await _context.SalesReports
+                        .FirstOrDefaultAsync(r => r.Date == report.Date);
+
+                    if (existingReport == null) // If no existing report, insert new
                     {
-                        Date = g.Key,
-                        TotalSales = g.Sum(x => x.TotalSales),
-                        TotalOrders = g.Sum(x => x.TotalOrders)
-                    })
-                    .ToList(),
-                _ => throw new ArgumentException("Invalid frequency")
-            };
+                        await _context.SalesReports.AddAsync(report);
+                    }
+                    else // If report exists, update it
+                    {
+                        existingReport.TotalSales += report.TotalSales;
+                        existingReport.TotalOrders += report.TotalOrders;
+                        _context.SalesReports.Update(existingReport);
+                    }
+                }
+
+                // Save changes to the database
+                await _context.SaveChangesAsync();
+
+                // Return the daily reports
+                return salesData;
+            }
+            else
+            {
+                // For weekly and monthly reports, derive from existing daily data
+                var existingReports = await _context.SalesReports.ToListAsync();
+
+                return frequency.ToLower() switch
+                {
+                    "weekly" => existingReports
+                        .GroupBy(x => x.Date.AddDays(-(int)x.Date.DayOfWeek)) // Group by the start of the week
+                        .Select(g => new SalesReport
+                        {
+                            Date = g.Key,
+                            TotalSales = g.Sum(x => x.TotalSales),
+                            TotalOrders = g.Sum(x => x.TotalOrders)
+                        })
+                        .ToList(),
+                    "monthly" => existingReports
+                        .GroupBy(x => new DateTime(x.Date.Year, x.Date.Month, 1)) // Group by the month
+                        .Select(g => new SalesReport
+                        {
+                            Date = g.Key,
+                            TotalSales = g.Sum(x => x.TotalSales),
+                            TotalOrders = g.Sum(x => x.TotalOrders)
+                        })
+                        .ToList(),
+                    _ => throw new ArgumentException("Invalid frequency")
+                };
+            }
         }
+
     }
 }

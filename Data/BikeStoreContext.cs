@@ -15,7 +15,11 @@ namespace Bike_Store_App_WebApi.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<ShoppingCart> ShoppingCarts { get; set; }
-        public DbSet<Inventory> Inventories { get; set; } 
+        public DbSet<Inventory> Inventories { get; set; }
+
+        public DbSet<SalesReport> SalesReports { get; set; }
+
+        public DbSet<Review> Reviews { get; set; }
 
     }
 }

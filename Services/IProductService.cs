@@ -10,7 +10,7 @@ namespace Bike_Store_App_WebApi.Services
         Task DeleteProduct(int productId);
         Task<IEnumerable<ProductDTO>> GetAllProducts();
         Task<ProductDTO?> GetProductById(int productId);
-        Task<List<ProductDTO>> GeBikesByCategory(string category);
+        Task<List<ProductDTO>> GetBikesByCategory(string category);
         Task<Product> GetBikeByBrand(string brand);
         Task<Product> GetBikeBySearch(string searchBy, string filterValue);
     }

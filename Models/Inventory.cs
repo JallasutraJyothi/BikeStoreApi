@@ -11,7 +11,7 @@ namespace Bike_Store_App_WebApi.Models
         public int ProductId { get; set; }
 
         [Required]
-        public int Quantity { get; set; } = 0;
+        public int Quantity { get; set; } 
 
         public DateTime? RestockDate { get; set; }
 

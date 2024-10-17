@@ -19,25 +19,62 @@ namespace Bike_Store_App_WebApi.Services
 
         public async Task<ProductDTO> AddProduct(ProductDTO productDTO)
         {
+            var existingProduct = await _context.Products
+        .FirstOrDefaultAsync(p => p.ProductName == productDTO.ProductName); 
+
+            if (existingProduct != null)
+            {
+                
+                throw new System.InvalidOperationException("Product already exists.");
+            }
+
             var product = _mapper.Map<Product>(productDTO);
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-            return _mapper.Map<ProductDTO>(product);
+
+            var savedProduct = await _context.Products
+                .Include(p => p.Brand) 
+                .Include(p => p.Category) 
+                .FirstOrDefaultAsync(p => p.ProductId == product.ProductId);
+
+            return _mapper.Map<ProductDTO>(savedProduct);
         }
 
         public async Task<ProductDTO> UpdateProduct(int productId, ProductDTO productDTO)
         {
-            var existingProduct = await _context.Products.FindAsync(productId);
+            var existingProduct = await _context.Products
+        .Include(p => p.Brand)   
+        .Include(p => p.Category)
+        .FirstOrDefaultAsync(p => p.ProductId == productId);
+
             if (existingProduct == null)
                 throw new EntityNotFoundException("Product not found");
 
+            
             existingProduct.ProductName = productDTO.ProductName;
             existingProduct.Description = productDTO.Description;
             existingProduct.Price = productDTO.Price;
             existingProduct.StockQuantity = productDTO.StockQuantity;
             existingProduct.CategoryId = productDTO.CategoryId;
+            existingProduct.BrandId = productDTO.BrandId; 
 
+           
             await _context.SaveChangesAsync();
+
+            
+            var inventory = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ProductId == productId);
+
+            if (inventory != null)
+            {
+                inventory.Quantity = productDTO.StockQuantity; 
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                throw new System.InvalidOperationException("Inventory entry not found for this product.");
+            }
+
             return _mapper.Map<ProductDTO>(existingProduct);
         }
 
@@ -54,20 +91,27 @@ namespace Bike_Store_App_WebApi.Services
 
         public async Task<IEnumerable<ProductDTO>> GetAllProducts()
         {
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.Products
+        .Include(p => p.Brand)  
+        .Include(p => p.Category) 
+        .ToListAsync();
             return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
 
         public async Task<ProductDTO> GetProductById(int productId)
         {
-            var product = await _context.Products.FindAsync(productId);
+            var product = await _context.Products
+        .Include(p => p.Brand) 
+        .Include(p => p.Category) 
+        .FirstOrDefaultAsync(p => p.ProductId == productId);
+
             if (product == null)
                 throw new EntityNotFoundException("Product not found");
 
             return _mapper.Map<ProductDTO>(product);
         }
 
-        public async Task<List<ProductDTO>> GeBikesByCategory(string category)
+        public async Task<List<ProductDTO>> GetBikesByCategory(string category)
         {
             return await _context.Products
                 .Where(p => p.Category.CategoryName == category)
@@ -88,36 +132,41 @@ namespace Bike_Store_App_WebApi.Services
         public async Task<Product> GetBikeByBrand(string brand)
         {
             return await _context.Products
-                .FirstOrDefaultAsync(p => p.Brand.BrandName == brand);
+        .Include(p => p.Brand) 
+        .Include(p => p.Category)
+        .FirstOrDefaultAsync(p => p.Brand.BrandName == brand);
         }
 
         public async Task<Product> GetBikeBySearch(string searchBy, string filterValue)
         {
+            IQueryable<Product> query = _context.Products
+        .Include(p => p.Brand)
+        .Include(p => p.Category); 
+
             if (searchBy == "Name")
             {
-                return await _context.Products.FirstOrDefaultAsync(p => p.ProductName.Contains(filterValue));
+                return await query.FirstOrDefaultAsync(p => p.ProductName.Contains(filterValue));
             }
             else if (searchBy == "Category")
             {
-                return await _context.Products.FirstOrDefaultAsync(p => p.Category.CategoryName == filterValue);
+                return await query.FirstOrDefaultAsync(p => p.Category.CategoryName == filterValue);
             }
             else if (searchBy == "Price")
             {
                 if (double.TryParse(filterValue, out double parsedPrice))
                 {
-                    return await _context.Products.FirstOrDefaultAsync(p => p.Price == parsedPrice);
+                    return await query.FirstOrDefaultAsync(p => p.Price == parsedPrice);
                 }
                 else
                 {
-                    // Handle invalid price format (e.g., return null or throw an exception)
                     return null;
                 }
             }
             else if (searchBy == "Brand")
             {
-                return await _context.Products.FirstOrDefaultAsync(p => p.Brand.BrandName.Contains(filterValue));
-
+                return await query.FirstOrDefaultAsync(p => p.Brand.BrandName.Contains(filterValue));
             }
+
             return null;
         }
 

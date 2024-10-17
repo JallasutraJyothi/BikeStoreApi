@@ -29,15 +29,54 @@ namespace Bike_Store_App_WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ProductDTO productDTO)
         {
-            var createdProduct = await _productService.AddProduct(productDTO);
-            return CreatedAtAction(nameof(GetProductById), new { id = createdProduct.ProductId }, createdProduct);
+            try
+            {
+                var createdProduct = await _productService.AddProduct(productDTO);
+                return CreatedAtAction(nameof(GetProductById), new { id = createdProduct.ProductId }, createdProduct);
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                // Return a Conflict response if the product already exists
+                return Conflict(ex.Message); // HTTP 409 Conflict
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions as needed
+                return StatusCode(500, "Internal server error: " + ex.Message); // HTTP 500 Internal Server Error
+            }
         }
 
         [HttpPut("products/{productId}")]
         public async Task<IActionResult> UpdateProduct(int productId, [FromBody] ProductDTO productDTO)
         {
-            var updatedProduct = await _productService.UpdateProduct(productId, productDTO);
-            return Ok(updatedProduct);
+            if (productDTO == null)
+            {
+                return BadRequest("Product data must be provided.");
+            }
+
+            try
+            {
+                // Call the service to update the product
+                var updatedProduct = await _productService.UpdateProduct(productId, productDTO);
+
+                // Return a response with the updated product data
+                return Ok(updatedProduct); // HTTP 200 OK with the updated product
+            }
+            catch (EntityNotFoundException ex)
+            {
+                // Return a Not Found response if the product does not exist
+                return NotFound(ex.Message); // HTTP 404 Not Found
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                // Handle case where inventory entry is not found
+                return Conflict(ex.Message); // HTTP 409 Conflict
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                return StatusCode(500, "Internal server error: " + ex.Message); // HTTP 500 Internal Server Error
+            }
         }
 
 
@@ -67,28 +106,30 @@ namespace Bike_Store_App_WebApi.Controllers
         [HttpGet("byCategory/{category}")]
         public async Task<IActionResult> GetBikesByCategory(string category)
         {
-            var result = await _productService.GeBikesByCategory(category);
+            var result = await _productService.GetBikesByCategory(category);
             return Ok(result);
         }
 
         [HttpGet("byBrand/{brand}")]
         public async Task<IActionResult> GetBikeByBrand(string brand)
         {
-            var result = await _productService.GetBikeByBrand(brand);
-            if (result == null)
+            var product = await _productService.GetBikeByBrand(brand);
+            if (product == null)
                 return NotFound("Bike not found");
 
-            return Ok(result);
+            var productDTO = _mapper.Map<ProductDTO>(product);
+            return Ok(productDTO);
         }
 
         [HttpGet("search")]
         public async Task<IActionResult> GetBikeBySearch(string searchBy, string filterValue)
         {
-            var result = await _productService.GetBikeBySearch(searchBy, filterValue);
-            if (result == null)
+            var product = await _productService.GetBikeBySearch(searchBy, filterValue);
+            if (product == null)
                 return NotFound("No bikes found with this criteria");
 
-            return Ok(result);
+            var productDTO = _mapper.Map<ProductDTO>(product);
+            return Ok(productDTO);
         }
     }
 }

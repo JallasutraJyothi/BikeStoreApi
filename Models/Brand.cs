@@ -12,5 +12,7 @@ namespace Bike_Store_App_WebApi.Models
         public virtual Category? Category { get; set; }
         [ForeignKey(nameof(Category))]
         public int? CategoryId { get; set; }
+
+        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }
